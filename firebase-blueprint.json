@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "Article": {
+      "title": "Article",
+      "description": "A wiki article created or saved by a user.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the article."
+        },
+        "content": {
+          "type": "string",
+          "description": "The markdown content of the article."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "The UID of the user who created/saved the article."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the article was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the article was last updated."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether the article is visible to everyone."
+        },
+        "sourceUrl": {
+          "type": "string",
+          "description": "The original Wikipedia URL if it was saved from there."
+        }
+      },
+      "required": ["title", "content", "authorId", "createdAt", "updatedAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "The user's profile picture URL."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "admin"],
+          "description": "The user's role in the application."
+        }
+      },
+      "required": ["displayName", "email"]
+    }
+  },
+  "firestore": {
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Collection of wiki articles."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    }
+  }
+}

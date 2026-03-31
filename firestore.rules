@@ -1,0 +1,86 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: articles
+// Document ID: auto-generated
+// Fields:
+//   - title: string (required) - The title of the article.
+//   - content: string (required) - The markdown content of the article.
+//   - authorId: string (required) - The UID of the user who created/saved the article.
+//   - createdAt: timestamp (required) - When the article was created.
+//   - updatedAt: timestamp (required) - When the article was last updated.
+//   - isPublic: boolean (optional) - Whether the article is visible to everyone.
+//   - sourceUrl: string (optional) - The original Wikipedia URL if it was saved from there.
+//
+// Collection: users
+// Document ID: user UID
+// Fields:
+//   - displayName: string (required) - The user's display name.
+//   - email: string (required) - The user's email address.
+//   - photoURL: string (optional) - The user's profile picture URL.
+//   - role: string (required) - The user's role (user/admin).
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner(data) {
+      return isAuthenticated() && request.auth.uid == data.authorId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "hoangnnse183499@fpt.edu.vn" && request.auth.token.email_verified == true));
+    }
+
+    function isValidArticle(data) {
+      return data.keys().hasAll(['title', 'content', 'authorId', 'createdAt', 'updatedAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.content is string && data.content.size() < 100000 &&
+             data.authorId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['displayName', 'email', 'role']) &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['user', 'admin'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'user';
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow read: if request.resource.data.isPublic == true || isDocOwner(resource.data) || isAdmin();
+      allow create: if isAuthenticated() && isValidArticle(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner(resource.data) && isValidArticle(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner(resource.data) || isAdmin());
+    }
+  }
+}

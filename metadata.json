@@ -1,0 +1,5 @@
+{
+  "name": "WikiClone",
+  "description": "A full-featured Wikipedia clone with search, article viewing, and personal wiki capabilities.",
+  "requestFramePermissions": []
+}
